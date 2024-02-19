@@ -20,9 +20,17 @@
 #include <fstream>
 #include <stdlib.h>
 
- int fuzz_without_main(int argc, const char **argv);
+extern "C" int fuzz_without_main(int argc, char *const *argv);
 
-
+extern "C" {
+  #include <ngx_config.h>
+  #include <ngx_core.h>
+  #include <ngx_event.h>
+  #include <ngx_http.h>
+  #include <ngx_connection.h>
+  #include <ngx_inet.h>
+  #include <nginx.h>
+}
 
 extern char **environ;
 int random_port = 8000;
@@ -119,8 +127,8 @@ std::string sha1ToString(uint8_t sha1_hash[SHA_DIGEST_LENGTH]) {
 void* runServerThread(void*) {
   std::string random_port_str = std::to_string(random_port);
   //std::cout << "random port is: " << random_port_str << "\n";
-  std::string conf_template_name = "none";
-  std::string ext = ".none";
+  std::string conf_template_name = "/src/nginx.conf";
+  std::string ext = ".conf";
   std::string conf_content = readFile(conf_template_name);
   // Replacing _PORT_ with random port number
   int pos_port;
@@ -134,13 +142,12 @@ void* runServerThread(void*) {
   std::string conf_file_name_str = conf_template_name+random_port_str+ext;
   writeToFile(conf_content, conf_file_name_str, false);
   const char *conf_file_name = conf_file_name_str.c_str();
-  std::string dirname = std::string("/tmp/ats") + std::to_string(random_port);
-  setenv("TS_ROOT", dirname.c_str(), 1);
-  const char *my_argv[] = {"/tmp/traffic_server", NULL};
+
+  const char *my_argv[] = {"/tmp/nginx", "-c", conf_file_name, "-e", "/tmp/nginx.log", NULL};
   const int my_argc = std::end(my_argv) - std::begin(my_argv) - 1;
 
   // This will run the server in a single process mode, and in our case in a single thread.
-  fuzz_without_main(my_argc, my_argv);
+  fuzz_without_main(my_argc, const_cast<char* const *>(my_argv));
 
   return NULL;
 }
@@ -213,7 +220,7 @@ std::string sendRequest(const char* message, size_t data_len, const std::string&
 }
 
 void setRandomPort(){
-   random_port = 10000 + getpid()%1024;
+   random_port = 2000 + getpid()%63000;
 }
 
 bool startServer(){
@@ -244,7 +251,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t data_len) {
   std::string cacheable_codes[] = {"300","301","305","308","403","404","405","410","414","451","500","501","502","503","504"};
   if (std::find(std::begin(cacheable_codes), std::end(cacheable_codes), response_code) != std::end(cacheable_codes)) {
     writeToFile(std::string((const char*) data, data_len), "/4/4.66/logs/error_input_"+request_sha_str, true);
-    writeToFile(response_code, "/4/4.66/logs/response_ats_"+request_sha_str, true);
+    writeToFile(response_code, "/4/4.66/logs/response_nginx_"+request_sha_str, true);
   }
 
   if (response_code != "200") return -2;

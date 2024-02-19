@@ -18,6 +18,7 @@
 #include <iomanip>
 #include <vector>
 #include <fstream>
+#include <stdlib.h>
 
 extern "C" int fuzz_without_main(int argc, char **argv);
 
@@ -117,8 +118,9 @@ std::string sha1ToString(uint8_t sha1_hash[SHA_DIGEST_LENGTH]) {
 // A function called by a create thread that will run server inside the single thread
 void* runServerThread(void*) {
   std::string random_port_str = std::to_string(random_port);
-  std::cout << "random port is: " << random_port_str << "\n";
+  //std::cout << "random port is: " << random_port_str << "\n";
   std::string conf_template_name = "/src/h2o.conf";
+  std::string ext = ".conf";
   std::string conf_content = readFile(conf_template_name);
   // Replacing _PORT_ with random port number
   int pos_port;
@@ -128,8 +130,8 @@ void* runServerThread(void*) {
     replace(conf_content, "_PORT_", random_port_str);
   }
 
-  std::cout << "new conf content is: " << conf_content << "\n";
-  std::string conf_file_name_str = conf_template_name+random_port_str;
+  //std::cout << "new conf content is: " << conf_content << "\n";
+  std::string conf_file_name_str = conf_template_name+random_port_str+ext;
   writeToFile(conf_content, conf_file_name_str, false);
   const char *conf_file_name = conf_file_name_str.c_str();
 
@@ -148,7 +150,7 @@ std::string sendRequest(const char* message, size_t data_len, const std::string&
   std::string request = std::string(message, data_len);
   addHash(request, request_sha_hash);
 
-  std::cout << "here is the request: " << request << "\n";
+  //std::cout << "here is the request: " << request << "\n";
 
   /* create the socket */
   sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -180,20 +182,28 @@ std::string sendRequest(const char* message, size_t data_len, const std::string&
   } while (sent < hashed_message_len);
 
   char recvBuff[1024];
+  std::string response="";
   int n=0;
 
   struct timeval timeout;
-  timeout.tv_sec = 1;
-  timeout.tv_usec = 0;
+  timeout.tv_sec = 0;
+  //timeout.tv_usec = 50000;
+  timeout.tv_usec = 500000; // slowing down 10 times
   setsockopt(clientsockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 
-  std::string response="";
   while ( (n = read(clientsockfd, recvBuff, sizeof(recvBuff)-1)) > 0)
   {
     recvBuff[n] = 0;
     response = response + std::string(recvBuff);
+    break;
   }
-  std::cout << "here is the response: " << std::string(response) << "\n";
+  //std::cout << "here is the response: " << std::string(response) << "\n";
+
+
+  //std::string bad_response = "HTTP/1.1 555";
+  //n = read(clientsockfd, recvBuff, sizeof(recvBuff)-1);
+  //if (n <= 0) return bad_response;
+  //response = std::string(recvBuff); 
 
   /* close the socket */
   close(clientsockfd);
@@ -206,26 +216,11 @@ void setRandomPort(){
 }
 
 bool startServer(){
-  setRandomPort();
+  //setRandomPort();
   pthread_t server_thread;
   pthread_create(&server_thread, NULL, &runServerThread, NULL);
   sleep(1);
   return true;
-}
-
-std::string extractResponseCodes(std::string response) {
-
-  std::string res = "";
-  int index = 0;
-  std::string temp = response;
-  while (true){
-    index = temp.find("HTTP/");
-    if (index == std::string::npos) break;
-    if (temp[index+6] == '.' && temp[index+8] == ' ') res += temp.substr(index+9,3) + " ";
-    temp = temp.substr(index+5,temp.size()-5-index);
-  }
-
-  return res;
 }
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t data_len) {
@@ -244,14 +239,14 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t data_len) {
 
   if (response.size() >= 3) response_code = response.substr(9,3);
   else response_code = "444"; //revert
-  std::cout << "here is the response code: " << response_code << "\n";
-  std::string cacheable_codes[] = {"300", "301", "302", "404", "405", "410", "414", "501"};
+  // non-successful status codes cached by the servers under test
+  std::string cacheable_codes[] = {"300","301","305","308","403","404","405","410","414","451","500","501","502","503","504"};
   if (std::find(std::begin(cacheable_codes), std::end(cacheable_codes), response_code) != std::end(cacheable_codes)) {
-    writeToFile(std::string((const char*) data, data_len), "/logs/error_input_"+request_sha_str, true);
-    writeToFile(response_code, "/logs/response_h2o_"+request_sha_str, true);
+    writeToFile(std::string((const char*) data, data_len), "/4/4.66/logs/error_input_"+request_sha_str, true);
+    writeToFile(response_code, "/4/4.66/logs/response_h2o_"+request_sha_str, true);
   }
 
   if (response_code != "200") return -2;
-  writeToFile(std::string((const char*) data, data_len), "/logs/input_"+request_sha_str, true);
+  writeToFile(std::string((const char*) data, data_len), "/4/4.66/logs/input_"+request_sha_str, true);
   return 0;
 }

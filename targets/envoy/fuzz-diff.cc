@@ -144,10 +144,10 @@ void* runServerThread(void*) {
   return NULL;
 }
 
-std::string sendRequest(const std::string& req, const std::string& request_sha_hash) {
+std::string sendRequest(const char* message, size_t data_len, const std::string& request_sha_hash) {
   int sockfd, bytes, sent;
 
-  std::string request = req;
+  std::string request = std::string(message, data_len);
   addHash(request, request_sha_hash);
 
   //std::cout << "here is the request: " << request << "\n";
@@ -164,10 +164,9 @@ std::string sendRequest(const std::string& req, const std::string& request_sha_h
   client.sin_addr.s_addr = inet_addr("127.0.0.1");
   int clientsockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-  std::string conn_err = "000";
   /* connect the socket */
   if (connect(clientsockfd,(struct sockaddr *)&client,sizeof(client)) < 0)
-    return conn_err;
+    error("ERROR connecting");
 
   /* send the request */
   const char* hashed_message = request.c_str();
@@ -188,7 +187,8 @@ std::string sendRequest(const std::string& req, const std::string& request_sha_h
 
   struct timeval timeout;
   timeout.tv_sec = 0;
-  timeout.tv_usec = 50000;
+  //timeout.tv_usec = 50000;
+  timeout.tv_usec = 500000; // slowing down 10 times
   setsockopt(clientsockfd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 
   while ( (n = read(clientsockfd, recvBuff, sizeof(recvBuff)-1)) > 0)
@@ -220,7 +220,6 @@ bool startServer(){
   pthread_t server_thread;
   pthread_create(&server_thread, NULL, &runServerThread, NULL);
   sleep(1);
-  for (int i=0; i<100; i++) {sendRequest("GET / HTTP/1.1\r\nHost:localhost\r\n\r\n", "efgh");}
   return true;
 }
 
@@ -233,7 +232,21 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t data_len) {
   unsigned char request_sha[SHA_DIGEST_LENGTH];
   SHA1(data, data_len, request_sha);
   std::string request_sha_str = sha1ToString(request_sha);
-  if (request_sha_str == "abcd") std::cout << "here is the request hash: " << request_sha_str << "\n";
 
+  // Sending a request.
+  std::string response_code;
+  std::string response = sendRequest((const char*) data, data_len, request_sha_str);
+
+  if (response.size() >= 3) response_code = response.substr(9,3);
+  else response_code = "444"; //revert
+  // non-successful status codes cached by the servers under test
+  std::string cacheable_codes[] = {"300","301","305","308","403","404","405","410","414","451","500","501","502","503","504"};
+  if (std::find(std::begin(cacheable_codes), std::end(cacheable_codes), response_code) != std::end(cacheable_codes)) {
+    writeToFile(std::string((const char*) data, data_len), "/4/4.66/logs/error_input_"+request_sha_str, true);
+    writeToFile(response_code, "/4/4.66/logs/response_envoy_"+request_sha_str, true);
+  }
+
+  if (response_code != "200") return -2;
+  writeToFile(std::string((const char*) data, data_len), "/4/4.66/logs/input_"+request_sha_str, true);
   return 0;
 }

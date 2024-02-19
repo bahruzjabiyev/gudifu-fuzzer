@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 ################################################################################
-FROM oss-fuzz-base/new-base-builder:v2.1
+FROM gcr.io/oss-fuzz-base/base-builder
 
 RUN apt-get update && apt-get -y install  \
 	build-essential \
