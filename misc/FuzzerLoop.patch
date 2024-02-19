@@ -1,0 +1,30 @@
+--- /tmp/old/libfuzzer/FuzzerLoop.cpp	2022-11-15 22:17:49.000000000 -0500
++++ /tmp/new/libfuzzer/FuzzerLoop.cpp	2022-12-02 06:55:00.000000000 -0500
+@@ -511,7 +511,8 @@
+   // Largest input length should be INT_MAX.
+   assert(Size < std::numeric_limits<uint32_t>::max());
+ 
+-  ExecuteCallback(Data, Size);
++  bool is_good_input = ExecuteCallback(Data, Size);
++  if (!is_good_input) return false;
+   auto TimeOfUnit = duration_cast<microseconds>(UnitStopTime - UnitStartTime);
+ 
+   UniqFeatureSetTmp.clear();
+@@ -586,7 +587,7 @@
+ 
+ // This method is not inlined because it would cause a test to fail where it
+ // is part of the stack unwinding. See D97975 for details.
+-ATTRIBUTE_NOINLINE void Fuzzer::ExecuteCallback(const uint8_t *Data,
++ATTRIBUTE_NOINLINE bool Fuzzer::ExecuteCallback(const uint8_t *Data,
+                                                 size_t Size) {
+   TPC.RecordInitialStack();
+   TotalNumberOfRuns++;
+@@ -612,7 +613,7 @@
+     RunningUserCallback = false;
+     UnitStopTime = system_clock::now();
+     (void)Res;
+-    assert(Res == 0);
++    if (Res == 0) return true;else return false;
+     HasMoreMallocsThanFrees = AllocTracer.Stop();
+   }
+   if (!LooseMemeq(DataCopy, Data, Size))
