@@ -3,7 +3,7 @@ Gudifu (Guided Differential Fuzzer) improves the state-of-the-art HTTP different
 
 <p></p>
 <p align="center">
-  <image src="https://github.com/bahruzjabiyev/gudifu-fuzzer/blob/main/misc/gudifu-1.png?raw=true">
+  <image src="https://user-images.githubusercontent.com/5577568/217193282-42f608d3-2b46-4ebc-90df-772f248605be.png">
 </p>
 <p></p>
 
