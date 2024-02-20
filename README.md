@@ -15,3 +15,9 @@ We created our target images from the [base images](https://github.com/google/os
 ## Modifying LibFuzzer Code
 For the paper, the only modification we made in the libfuzzer code was for avoiding to add input requests which trigger an error back to the corpus. This was to make sure that the fuzzing does not get stuck in error states since we rely on forwarded requests to compare the parsing behavior of targets. If you are also interested in making the same modification, make sure that you create your own version of `gcr.io/oss-fuzz-base/base-clang` by applying a few patches given in the [misc](/misc) folder. 
 
+## Running Experiments
+Once the building of fuzzing binaries and targets are completed, the fuzzing experiment can be started with the command below (should be run on each target separately).
+
+`/out/fuzz-diff /path/to/corpus/ -mutate-depth=2 -jobs=100`
+
+The first element in the command (i.e., `/out/fuzz-diff` is the path to the fuzzing binary), the second is the path to the corpus folder ([can](/misc/generate_corpus.py) be automatically generated) which is shared among all targets, the third is an optional argument for specifying the maximum number of mutations and finally the `jobs` argument can be used to run multiple instances of the fuzzer for a better speed. The [harnesses](/harnesses) have been designed to support multiprocessing (by using pid numbers for identification).
