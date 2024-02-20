@@ -5,7 +5,6 @@ The flow diagram of Gudifu is shown below. The data flow starts with a single in
 
 <p></p>
 <p align="center">
-  <image src="/misc/gudifu-1.png">
   <image src="https://anonymous.4open.science/r/840c8c57-3c32-451e-bf12-0e20be300389/public/imgs/explorer.png">
 </p>
 <p></p>
