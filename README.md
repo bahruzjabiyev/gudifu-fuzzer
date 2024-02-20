@@ -22,7 +22,4 @@ Once the building of fuzzing binaries and targets are completed, the fuzzing exp
 
 The first element in the command (i.e., `/out/fuzz-diff` is the path to the fuzzing binary), the second is the path to the corpus folder ([can](/misc/generate_corpus.py) be automatically generated) which is shared among all targets, the third is an optional argument for specifying the maximum number of mutations and finally the `jobs` argument can be used to run multiple instances of the fuzzer for a better speed. The [harnesses](/harnesses) have been designed to support multiprocessing (by using pid numbers for identification).
 
-## Getting Results
-For the paper, we developed an algorithm and a [code](/misc/compare.py) for holistic search of discrepancies. Helper codes for getting the results are in the [misc](/misc) folder. Essentially, the invocation of `get_common_requests.sh` and `get_results.sh`, one after another, will show you the parsing discrepancies in buckets (which makes the analysis easier).
-
-
+Once the experiments are completed, the parsing discrepancies can be extracted and analyzed. For the paper, we developed an algorithm and a [code](/misc/compare.py) for the holistic search of discrepancies. Helper codes for getting the experiment results are in the [misc](/misc) folder. Essentially, the invocation of `get_common_requests.sh` and `get_results.sh`, one after another, will show you the parsing discrepancies in buckets (which makes the analysis easier).
