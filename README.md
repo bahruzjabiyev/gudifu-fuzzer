@@ -3,7 +3,11 @@ Gudifu (Guided Differential Fuzzer) improves the state-of-the-art HTTP different
 
 The flow diagram of Gudifu is shown below. The data flow starts with a single input corpus populated with a set of HTTP requests. A number of fuzzer instances, one for each target server, share this input corpus and read inputs from it before mutating them and delivering them to their respective target servers. The target servers receive the inputs and process them, possibly returning an error message to the fuzzer instance, and possibly forwarding a message to their respective echo server. Regardless, the target servers are instrumented to report the code coverage achieved by processing the input back to the fuzzer instance in order to influence future input selection and mutation. The echo servers receive the forwarded requests from the target servers and log them to a single shared database for offline processing. They then send a response back to the target server, which sends it back to the fuzzer instance, which then can decide whether to add the mutated test case back to the input corpus for other fuzzer instances to draw from and mutate in future fuzzing iterations.
 
-![Flow Diagram of Gudifu](/misc/gudifu-1.png)
+<p></p>
+<p align="center">
+  <image src="/misc/gudifu-1.png">
+</p>
+<p></p>
 
 ## Building Targets
 We created our target images from the [base images](https://github.com/google/oss-fuzz/tree/master/infra/base-images) of Google oss-fuzz project and added server build instructions and fuzzing harness code (both specific to each server) in each image which can be found under the [targets](/targets) folder. Fuzzing harness codes can be viewed separately under the [harnesses](/harnesses) folder.
